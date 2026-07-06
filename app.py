@@ -2,13 +2,17 @@ import streamlit as st
 import pandas as pd
 import requests
 
+# Configurazione della pagina
 st.set_page_config(page_title="Charizard Analytics App", page_icon="🔥", layout="wide")
+
 st.title("🔥 Charizard Advanced Database & Analytics")
 st.subheader("Foto in tempo reale, prezzi medi e storici di vendita")
 
+# Database interno completo e aggiornato
 @st.cache_data
 def load_data():
     data = [
+        # L'Era Classica Wizards of the Coast (1996 - 2003)
         {"Anno": "1996-1997", "Era": "L'Era Classica WOTC", "Nome": "Charizard Topsun", "Info": "Retro Blu, Retro Verde, No Number"},
         {"Anno": "1996-1997", "Era": "L'Era Classica WOTC", "Nome": "Charizard Carddass Bandai", "Info": "Prism e Regular per distributori automatici"},
         {"Anno": "1998", "Era": "L'Era Classica WOTC", "Nome": "Charizard CD Promo #6", "Info": "Esclusiva olografica giapponese (CD Promo)"},
@@ -24,6 +28,8 @@ def load_data():
         {"Anno": "2002", "Era": "L'Era Classica WOTC", "Nome": "Charizard Legendary Collection #3/110", "Info": "Olo, Non-Olo e Reverse Holo a fuochi d'artificio"},
         {"Anno": "2002", "Era": "L'Era Classica WOTC", "Nome": "Charizard Box Topper #S1/S4", "Info": "Versione gigante (Oversized) Legendary Collection"},
         {"Anno": "2003", "Era": "L'Era Classica WOTC", "Nome": "Crystal Charizard (Charizard Cristallino)", "Info": "Skyridge #146/144 - Tipo Incolore e Reverse"},
+
+        # L'Era EX, Diamante/Perla, Platino e i Sotto-Set (2003 - 2013)
         {"Anno": "2003", "Era": "L'Era EX", "Nome": "Charizard Segreto", "Info": "EX Dragon #100/97 (Variante National Promo)"},
         {"Anno": "2004", "Era": "L'Era EX", "Nome": "Charizard ex", "Info": "EX RossoFuoco & VerdeFoglia #105/112"},
         {"Anno": "2005", "Era": "L'Era EX", "Nome": "Ditto (Charizard)", "Info": "EX Specie Delta #36/113 - Sembianze di Charizard"},
@@ -37,6 +43,8 @@ def load_data():
         {"Anno": "2012", "Era": "L'Era EX", "Nome": "Charizard (Ascesa Eroica)", "Info": "Boundaries Cross #20/149"},
         {"Anno": "2013", "Era": "L'Era EX", "Nome": "Charizard Shiny Segreto", "Info": "Uragano Plasma #136/135 - Rara segreta dorata"},
         {"Anno": "2013", "Era": "L'Era EX", "Nome": "Charizard Radiant Collection", "Info": "Tesori Leggendari #RC5/RC25"},
+
+        # L'Era XY (2014 - 2016)
         {"Anno": "2014", "Era": "L'Era XY", "Nome": "Charizard-EX (Double Rare)", "Info": "XY Fuoco Infernale #11/106"},
         {"Anno": "2014", "Era": "L'Era XY", "Nome": "Charizard-EX (Full Art)", "Info": "XY Fuoco Infernale #100/106"},
         {"Anno": "2014", "Era": "L'Era XY", "Nome": "M Charizard-EX Y (Ultra Rare)", "Info": "Fuoco Infernale #13/106"},
@@ -49,6 +57,8 @@ def load_data():
         {"Anno": "2016", "Era": "L'Era XY", "Nome": "Charizard Spirit Link", "Info": "XY Evoluzioni #81/108"},
         {"Anno": "2016", "Era": "L'Era XY", "Nome": "M Charizard-EX (Full Art Mega)", "Info": "XY Evoluzioni #101/108"},
         {"Anno": "2016", "Era": "L'Era XY", "Nome": "Charizard-EX Promo (Cameo)", "Info": "XY Promo #XY121 - Con Magmar e Flareon"},
+
+        # L'Era Sole & Luna (2017 - 2019)
         {"Anno": "2017", "Era": "L'Era Sole & Luna", "Nome": "Charizard-GX (Double Rare)", "Info": "Ombre Infuocate #20/147"},
         {"Anno": "2017", "Era": "L'Era Sole & Luna", "Nome": "Charizard-GX (Full Art)", "Info": "Ombre Infuocate #150/147"},
         {"Anno": "2017", "Era": "L'Era Sole & Luna", "Nome": "Charizard-GX (Rainbow / Hyper Rare)", "Info": "Ombre Infuocate #150/147 (Secret)"},
@@ -60,6 +70,8 @@ def load_data():
         {"Anno": "2019", "Era": "L'Era Sole & Luna", "Nome": "Clone Charizard (Charizard Clone)", "Info": "Mewtwo Strikes Back Evolution #366/SM-P"},
         {"Anno": "2019", "Era": "L'Era Sole & Luna", "Nome": "Charizard-GX Cromatico", "Info": "Destino Sfuggente #SV49/SV94"},
         {"Anno": "2019", "Era": "L'Era Sole & Luna", "Nome": "Charizard e Braixen-GX ALLEATI", "Info": "Eclissi Cosmica #22/236, Full Art #212, Arcobaleno #251"},
+
+        # L'Era Spada & Scudo (2020 - 2022)
         {"Anno": "2020", "Era": "L'Era Spada & Scudo", "Nome": "Charizard-V & Charizard-VMAX", "Info": "Fiamme Oscure #19/189 e #20/189"},
         {"Anno": "2020", "Era": "L'Era Spada & Scudo", "Nome": "Charizard-VMAX Arcobaleno", "Info": "Futuro Campione #074/073"},
         {"Anno": "2020", "Era": "L'Era Spada & Scudo", "Nome": "Charizard-V Cromatico (Shiny)", "Info": "Futuro Campione #079/073"},
@@ -72,7 +84,13 @@ def load_data():
         {"Anno": "2022", "Era": "L'Era Spada & Scudo", "Nome": "Charizard-VSTAR (Arcobaleno)", "Info": "Astri Lucenti #174/172"},
         {"Anno": "2022", "Era": "L'Era Spada & Scudo", "Nome": "Charizard (Leon) Trainer Gallery", "Info": "Astri Lucenti #TG03/TG30"},
         {"Anno": "2022", "Era": "L'Era Spada & Scudo", "Nome": "Charizard Lucente (Radiant)", "Info": "Pokémon GO #11/78 e Zenit Regale #20/159"},
-        {"Anno": "2022", "Era": "L'Era Spada & Scudo", "Nome": "Trilogia Promo UPC Special Illustration", "Info": "SWSH260 (V), SWSH261 (VMAX), SWSH262 (VSTAR)"},
+        
+        # SEPARATE: Le tre Promo UPC separate come richiesto
+        {"Anno": "2022", "Era": "L'Era Spada & Scudo", "Nome": "Charizard-V Promo UPC", "Info": "Special Illustration Promo #SWSH260"},
+        {"Anno": "2022", "Era": "L'Era Spada & Scudo", "Nome": "Charizard-VMAX Promo UPC", "Info": "Special Illustration Promo #SWSH261"},
+        {"Anno": "2022", "Era": "L'Era Spada & Scudo", "Nome": "Charizard-VSTAR Promo UPC", "Info": "Special Illustration Promo #SWSH262"},
+
+        # L'Era Scarlatto & Violetto (2023 - 2024-2026)
         {"Anno": "2023", "Era": "L'Era Scarlatto & Violetto", "Nome": "Charizard ex Teracristal (Double Rare)", "Info": "Ossidiana Infuocata #125/197 - Tipo Buio Regolare"},
         {"Anno": "2023", "Era": "L'Era Scarlatto & Violetto", "Nome": "Charizard ex Teracristal (Ultra Rare Full Art)", "Info": "Ossidiana Infuocata #215/197"},
         {"Anno": "2023", "Era": "L'Era Scarlatto & Violetto", "Nome": "Charizard ex Teracristal (SIR)", "Info": "Ossidiana Infuocata #223/197 - Special Illustration Rare"},
@@ -84,12 +102,16 @@ def load_data():
         {"Anno": "2024", "Era": "L'Era Scarlatto & Violetto", "Nome": "Charizard ex Teracristal Shiny (Shiny Rare)", "Info": "Destino di Paldea #054/091"},
         {"Anno": "2024", "Era": "L'Era Scarlatto & Violetto", "Nome": "Charizard ex Teracristal Shiny (SIR)", "Info": "Destino di Paldea #234/091 - Cromatico artistico"},
         {"Anno": "2024", "Era": "L'Era Scarlatto & Violetto", "Nome": "Charizard McDonald's Promo", "Info": "Dragon Discovery #001/015"},
-        {"Anno": "2025", "Era": "L'Era Scarlatto & Violetto", "Nome": "Mega Charizard X ex", "Info": "Espansione Megaevoluzione — Fiamme Spettrali #013/094"},
-        {"Anno": "2025", "Era": "L'Era Scarlatto & Violetto", "Nome": "Mega Charizard X ex (Full Art)", "Info": "Espansione Megaevoluzione — Fiamme Spettrali #109/094"},
-        {"Anno": "2025", "Era": "L'Era Scarlatto & Violetto", "Nome": "Mega Charizard X ex (SIR)", "Info": "Espansione Megaevoluzione — Fiamme Spettrali #125/094"},
-        {"Anno": "2025", "Era": "L'Era Scarlatto & Violetto", "Nome": "Mega Charizard X ex (Gold)", "Info": "Espansione Megaevoluzione — Fiamme Spettrali #130/094"},
-        {"Anno": "2025", "Era": "L'Era Scarlatto & Violetto", "Nome": "Mega Charizard Y ex", "Info": "Set d'accompagnamento / Mazzo Tematico speciale"},
+
+        # MODIFICATE: Le carte del 2025 spostate sotto "L'Era Megaevoluzioni" come richiesto
+        {"Anno": "2025", "Era": "L'Era Megaevoluzioni", "Nome": "Mega Charizard X ex", "Info": "Espansione Megaevoluzione — Fiamme Spettrali #013/094"},
+        {"Anno": "2025", "Era": "L'Era Megaevoluzioni", "Nome": "Mega Charizard X ex (Full Art)", "Info": "Espansione Megaevoluzione — Fiamme Spettrali #109/094"},
+        {"Anno": "2025", "Era": "L'Era Megaevoluzioni", "Nome": "Mega Charizard X ex (SIR)", "Info": "Espansione Megaevoluzione — Fiamme Spettrali #125/094"},
+        {"Anno": "2025", "Era": "L'Era Megaevoluzioni", "Nome": "Mega Charizard X ex (Gold)", "Info": "Espansione Megaevoluzione — Fiamme Spettrali #130/094"},
+        {"Anno": "2025", "Era": "L'Era Megaevoluzioni", "Nome": "Mega Charizard Y ex", "Info": "Set d'accompagnamento / Mazzo Tematico speciale"},
         {"Anno": "2026", "Era": "L'Era Scarlatto & Violetto", "Nome": "Mega Charizard Y ex (Promo)", "Info": "Tin da Collezione / Prodotto speciale d'inizio anno"},
+
+        # Menzioni Speciali e Camei Ufficiali
         {"Anno": "2023", "Era": "Menzioni Speciali e Camei", "Nome": "Mewtwo GG (Cameo)", "Info": "Crown Zenith Galarian Gallery #GG44"},
         {"Anno": "2023", "Era": "Menzioni Speciali e Camei", "Nome": "Pikachu Promo SV (Cameo)", "Info": "Scarlatto e Violetto Promo #005"},
         {"Anno": "2019", "Era": "Menzioni Speciali e Camei", "Nome": "Greninja (Cameo)", "Info": "Greninja Unbroken Bonds 117"},
@@ -100,8 +122,15 @@ def load_data():
 
 df = load_data()
 
+# Inizializzazione dello stato della collezione (per salvare i check)
+if "binder" not in st.session_state:
+    st.session_state.binder = {}
+
 def get_pokemon_image(card_name):
     clean_name = card_name.replace(" (Cameo)", "").replace(" (Charizard Oscuro)", "").replace(" (Charizard di Blaine)", "").replace(" (Charizard Lucente)", "").replace(" (Charizard Cristallino)", "")
+    # Piccolo trucco per far cercare bene le promo UPC separate
+    if "Promo UPC" in clean_name:
+        clean_name = "Charizard SWSH"
     url = f"https://api.pokemontcg.io/v2/cards?q=name:\"{clean_name}\""
     try:
         response = requests.get(url).json()
@@ -111,20 +140,34 @@ def get_pokemon_image(card_name):
         pass
     return "https://via.placeholder.com/150x210?text=Immagine+Non+Disponibile"
 
+# Barra laterale per i Filtri di Ricerca
 st.sidebar.header("🔍 Filtri di Ricerca")
 search_query = st.sidebar.text_input("Cerca per nome:", "")
 selected_era = st.sidebar.selectbox("Filtra per Era:", ["Tutte"] + list(df["Era"].unique()))
 
+# Mostra solo il Binder
+mostra_solo_binder = st.sidebar.checkbox("📂 Mostra SOLO il mio Binder")
+
+# Conteggio carte nel Binder
+carte_possedute = sum(1 for v in st.session_state.binder.values() if v)
+st.sidebar.metric(label="📊 Carte nel tuo Binder", value=f"{carte_possedute} / {len(df)}")
+
+# Applicazione dei filtri
 filtered_df = df.copy()
+
 if search_query:
     filtered_df = filtered_df[filtered_df["Nome"].str.contains(search_query, case=False)]
 if selected_era != "Tutte":
     filtered_df = filtered_df[filtered_df["Era"] == selected_era]
+if mostra_solo_binder:
+    filtered_df = filtered_df[filtered_df.index.map(lambda idx: st.session_state.binder.get(f"check_{idx}", False))]
 
+# Visualizzazione delle carte
 if filtered_df.empty:
-    st.warning("Nessun Charizard corrisponde ai criteri di ricerca.")
+    st.warning("Nessun Charizard corrisponde ai criteri selezionati.")
 else:
     for index, row in filtered_df.iterrows():
+        key_id = f"check_{index}"
         with st.container():
             col1, col2, col3 = st.columns([1, 2, 2])
             with col1:
@@ -134,7 +177,10 @@ else:
                 st.markdown(f"### {row['Nome']}")
                 st.caption(f"📅 **Anno:** {row['Anno']} | 🏛️ **Era:** {row['Era']}")
                 st.write(f"📝 *{row['Info']}*")
-                owned = st.checkbox(f"Ce l'ho in collezione", key=f"check_{index}")
+                
+                owned = st.checkbox("Ce l'ho in collezione", key=key_id, value=st.session_state.binder.get(key_id, False))
+                st.session_state.binder[key_id] = owned
+                
                 if owned:
                     st.success("✅ Aggiunto al tuo Binder!")
             with col3:
@@ -143,7 +189,7 @@ else:
                     prezzo_medio = 650.00
                 elif "ex" in row["Nome"].lower() and row["Anno"] == "2004":
                     prezzo_medio = 250.00
-                elif "SIR" in row["Nome"] or "Alternate Art" in row["Nome"]:
+                elif "SIR" in row["Nome"] or "Alternate Art" in row["Nome"] or "Promo UPC" in row["Nome"]:
                     prezzo_medio = 180.00
                 else:
                     prezzo_medio = 45.00
