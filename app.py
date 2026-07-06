@@ -155,7 +155,7 @@ if search_query:
     filtered_df = filtered_df[filtered_df["Nome"].str.contains(search_query, case=False)]
 if selected_era != "Tutte":
     filtered_df = filtered_df[filtered_df["Era"] == selected_era]
-if muestra_solo_binder:
+if mostra_solo_binder:
     filtered_df = filtered_df[filtered_df.index.map(lambda idx: st.session_state.binder.get(f"check_{idx}", False))]
 
 # Visualizzazione delle carte
