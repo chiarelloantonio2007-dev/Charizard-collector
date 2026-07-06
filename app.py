@@ -1,11 +1,43 @@
 import streamlit as st
 import pandas as pd
+import requests
 
 # Configurazione della pagina
 st.set_page_config(page_title="Charizard Analytics App", page_icon="🔥", layout="wide")
 
 st.title("🔥 Charizard Advanced Database & Analytics")
 st.subheader("Foto in tempo reale, prezzi medi e storici di vendita")
+
+# --- FUNZIONE PER RECUPERARE I PREZZI REALI DA CARDMARKET ---
+@st.cache_data(ttl=3600)  # Mantiene i prezzi in memoria per 1 ora (3600 secondi) per non rallentare l'app
+def fetch_cardmarket_prices(img_id):
+    """
+    Interroga l'API pubblica di Pokémon TCG usando l'ID della carta
+    e isola i dati finanziari di Cardmarket.
+    """
+    try:
+        # Usiamo requests direttamente per evitare di dover installare l'intero SDK su Streamlit Cloud
+        url = f"https://api.pokemontcg.io/v2/cards/{img_id}"
+        response = requests.get(url, timeout=5)
+        
+        if response.status_code == 200:
+            card_data = response.json().get('data', {})
+            cardmarket = card_data.get('cardmarket', {})
+            
+            if cardmarket:
+                prices = cardmarket.get('prices', {})
+                return {
+                    "Stato": "Successo",
+                    "Prezzo_Trend": prices.get('trendPrice', 0.00),
+                    "Prezzo_Low": prices.get('lowPrice', 0.00),
+                    "Prezzo_Avg1": prices.get('avg1', 0.00),
+                    "Prezzo_Avg30": prices.get('avg30', 0.00),
+                    "Link_Cardmarket": cardmarket.get('url', 'https://www.cardmarket.com')
+                }
+        return {"Stato": "Nessun dato", "Prezzo_Trend": 0.00, "Prezzo_Low": 0.00, "Prezzo_Avg1": 0.00, "Prezzo_Avg30": 0.00, "Link_Cardmarket": ""}
+    except Exception:
+        return {"Stato": "Errore API", "Prezzo_Trend": 0.00, "Prezzo_Low": 0.00, "Prezzo_Avg1": 0.00, "Prezzo_Avg30": 0.00, "Link_Cardmarket": ""}
+
 
 # Dizionario statico delle immagini con i tuoi link esatti e verificati
 @st.cache_data
@@ -219,7 +251,6 @@ else:
         with st.container():
             col1, col2, col3 = st.columns([1, 2, 2])
             with col1:
-                # Recupera l'immagine direttamente dal dizionario locale statico
                 img_url = all_images.get(row["Img_ID"], "https://via.placeholder.com/150x210?text=Charizard")
                 st.image(img_url, width=160)
             with col2:
@@ -232,20 +263,28 @@ else:
                 
                 if owned:
                     st.success("✅ Aggiunto al tuo Binder!")
+            
+            # --- AGGIORNAMENTO DELLA COLONNA PREZZI REAL-TIME ---
             with col3:
-                st.markdown("📊 **Market Analytics (Simulazione Cardmarket)**")
-                if "Base" in row["Nome"] or "Shining" in row["Nome"] or "Crystal" in row["Nome"] or "Star" in row["Nome"]:
-                    prezzo_medio = 650.00
-                elif "ex" in row["Nome"].lower() and "2004" in row["Anno"]:
-                    prezzo_medio = 250.00
-                elif "SIR" in row["Nome"] or "Alternate Art" in row["Nome"] or "Promo UPC" in row["Nome"]:
-                    prezzo_medio = 180.00
+                st.markdown("📊 **Market Analytics (Cardmarket Reale)**")
+                
+                # Chiamata alla funzione API con cache
+                dati_cm = fetch_cardmarket_prices(row["Img_ID"])
+                
+                if dati_cm["Stato"] == "Successo" and dati_cm["Prezzo_Trend"] > 0:
+                    # Visualizzazione del prezzo di tendenza ufficiale di Cardmarket
+                    st.metric(
+                        label="Prezzo Trend Cardmarket", 
+                        value=f"€ {dati_cm['Prezzo_Trend']:.2f}", 
+                        delta=f"Prezzo Minimo: € {dati_cm['Prezzo_Low']:.2f}",
+                        delta_color="off"
+                    )
+                    st.markdown("**Andamento storico vendite:**")
+                    st.text(f"🔸 Media dell'ultimo giorno: € {dati_cm['Prezzo_Avg1']:.2f}")
+                    st.text(f"🔸 Media degli ultimi 30 giorni: € {dati_cm['Prezzo_Avg30']:.2f}")
+                    st.markdown(f"[🛒 Vedi su Cardmarket]({dati_cm['Link_Cardmarket']})")
                 else:
-                    prezzo_medio = 45.00
-                    
-                st.metric(label="Prezzo Medio di Vendita", value=f"€ {prezzo_medio:.2f}", delta="+5.4% nell'ultimo mese")
-                st.markdown("**Migliori vendite recenti:**")
-                st.text(f"🔸 Mint (Copia perfetta): € {prezzo_medio * 1.6:.2f}")
-                st.text(f"🔸 Near Mint (Ottima copia): € {prezzo_medio:.2f}")
-                st.text(f"🔸 Played (Copia rovinata): € {prezzo_medio * 0.35:.2f}")
+                    # Se la carta è un gadget vecchio (es. Topps, Topsun) o un'espansione futura non ancora tracciata nell'API
+                    st.info("⚠️ Dati storici Cardmarket non disponibili per questa specifica variante.")
+                    st.caption("I mercati europei potrebbero non tracciare questo ID o richiede un inserimento manuale.")
             st.divider()
