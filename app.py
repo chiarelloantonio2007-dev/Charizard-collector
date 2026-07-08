@@ -49,7 +49,7 @@ CARDMARKET_LINKS = {
     "swsh9tg-TG03": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Lost-Origin/Charizard-LORTG03",
     "swshp-SWSH261-upc": "https://www.cardmarket.com/it/Pokemon/Products/Singles/SWSH-Black-Star-Promos/Charizard-VMAX-SWSH261",
     "sv3-223": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Obsidian-Flames/Charizard-ex-V3-OBF223",
-    "sv3-228": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Obsidian-Flames/Charizard-ex-V4-OBF228", # Corretto da API o stima
+    "sv3-228": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Obsidian-Flames/Charizard-ex-V4-OBF228",
     "sv3pt5-006": "https://www.cardmarket.com/it/Pokemon/Products/Singles/151/Charizard-ex-V1-MEW006",
     "sv3pt5-183": "https://www.cardmarket.com/en/Pokemon/Products/Singles/151/Charizard-ex-V2-MEW183",
     "sv6-mega1": "https://www.cardmarket.com/it/Pokemon/Products/Singles/Phantasmal-Flames/Mega-Charizard-X-ex-V1-PFL013",
@@ -59,10 +59,9 @@ CARDMARKET_LINKS = {
     "sv6-mega5": "https://www.cardmarket.com/it/Pokemon/Products/Singles/MEP-Black-Star-Promos/Mega-Charizard-Y-ex-MEP030"
 }
 
-# --- FUNZIONE PER RECUPERARE I PREZZI REALI ---
+# --- FUNZIONE PER RECUPERARE I PREZZI TRAMITE API ---
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_cardmarket_prices(img_id):
-    # IDs che gestiamo forzatamente in locale con link dell'utente per evitare conflitti API o dati errati
     mappati_manualmente = list(CARDMARKET_LINKS.keys()) + ["topsun", "carddass"]
     
     if img_id in mappati_manualmente:
@@ -157,7 +156,7 @@ def load_all_images():
         "sv3-215": "https://images.pokemontcg.io/sv3/215.png",
         "sv3-223": "https://images.pokemontcg.io/sv3/223.png",
         "sv3-228": "https://images.pokemontcg.io/sv3/228.png",
-        "sv3pt5-006": "https://images.pokemontcg.io/sv3pt5/006.png",
+        "sv3pt5-006": "https://images.scrydex.com/pokemon/sv3pt5-6/medium", # LINK AGGIORNATO QUI
         "sv3pt5-183": "https://images.pokemontcg.io/sv3pt5/183.png",
         "sv3pt5-199": "https://images.pokemontcg.io/sv3pt5/199.png",
         "svp-56": "https://images.pokemontcg.io/svp/56.png",
@@ -311,7 +310,7 @@ else:
                 
                 dati_cm = fetch_cardmarket_prices(row["Img_ID"])
                 
-                # Calcola una stima accurata ad hoc per evitare i dati errati dell'API internazionale
+                # Calcolo stima accurata ad hoc se l'API non restituisce dati validi
                 if "Base 2" in row["Nome"]: prezzo_stima = 140.00
                 elif "Dark" in row["Nome"]: prezzo_stima = 110.00
                 elif "CD Promo" in row["Nome"]: prezzo_stima = 320.00
@@ -338,7 +337,7 @@ else:
                 elif "Fiamme Spettrali #130" in row["Nome"]: prezzo_stima = 380.00
                 elif "Mega Charizard Y ex Promo" in row["Nome"]: prezzo_stima = 35.00
                 elif "Topsun" in row["Nome"] or "Carddass" in row["Nome"]: prezzo_stima = 400.00
-                elif "Base" in row["Nome"] or "Shining" in row["Nome"] or "Star" in row["Nome"]: prezzo_stima = 650.00
+                elif "Base Set #4" in row["Nome"] or "Shining" in row["Nome"] or "Star" in row["Nome"]: prezzo_stima = 650.00
                 else: prezzo_stima = 50.00
 
                 if dati_cm["Stato"] == "Successo" and dati_cm["Prezzo_Trend"] > 0:
