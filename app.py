@@ -1,6 +1,11 @@
 import streamlit as st
 import pandas as pd
 import requests
+import json
+import os
+
+# Nome del file in cui verranno salvati i dati del Binder in locale
+BINDER_FILE = "my_binder_data.json"
 
 # Configurazione della pagina
 st.set_page_config(page_title="Charizard Analytics App", page_icon="🔥", layout="wide")
@@ -8,31 +13,37 @@ st.set_page_config(page_title="Charizard Analytics App", page_icon="🔥", layou
 st.title("🔥 Charizard Advanced Database & Analytics")
 st.subheader("Foto in tempo reale, prezzi medi e storici di vendita")
 
+# --- FUNZIONI PER IL SALVATAGGIO PERMANENTE (JSON) ---
+def load_binder_from_disk():
+    """Carica i dati del binder dal file JSON locale se esiste."""
+    if os.path.exists(BINDER_FILE):
+        try:
+            with open(BINDER_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_binder_to_disk():
+    """Salva lo stato attuale del binder nel file JSON locale."""
+    with open(BINDER_FILE, "w", encoding="utf-8") as f:
+        json.dump(st.session_state.binder, f, ensure_ascii=False, indent=4)
+
 # --- FUNZIONE PER RECUPERARE I PREZZI REALI DA CARDMARKET ---
-@st.cache_data(ttl=3600, show_spinner=False)  # Cache di 1 ora, nasconde lo spinner nativo per fluidità
+@st.cache_data(ttl=3600, show_spinner=False)
 def fetch_cardmarket_prices(img_id):
-    """
-    Interroga l'API pubblica di Pokémon TCG usando l'ID della carta.
-    Evita le chiamate per gli ID speciali non presenti nel database standard.
-    """
-    # Elenco di ID che sappiamo NON essere presenti nell'API ufficiale internazionale
     id_non_supportati = [
         "topsun", "carddass", "cd_promo", "topps", "intro-neo", 
         "sv6-mega1", "sv6-mega2", "sv6-mega3", "sv6-mega4", "sv6-mega5"
     ]
-    
     if img_id in id_non_supportati:
-        return {"Stato": "Non Standard", "Prezzo_Trend": 0.00, "Prezzo_Low": 0.00, "Prezzo_Avg1": 0.00, "Prezzo_Avg30": 0.00, "Link_Cardmarket": ""}
-
+        return {"Stato": "Non Standard"}
     try:
         url = f"https://api.pokemontcg.io/v2/cards/{img_id}"
-        # Timeout a 2 secondi per non bloccare l'app se l'API è lenta
-        response = requests.get(url, timeout=2.0)
-        
+        response = requests.get(url, timeout=2.5)
         if response.status_code == 200:
             card_data = response.json().get('data', {})
             cardmarket = card_data.get('cardmarket', {})
-            
             if cardmarket:
                 prices = cardmarket.get('prices', {})
                 return {
@@ -43,11 +54,9 @@ def fetch_cardmarket_prices(img_id):
                     "Prezzo_Avg30": prices.get('avg30', 0.00),
                     "Link_Cardmarket": cardmarket.get('url', 'https://www.cardmarket.com')
                 }
-        return {"Stato": "Nessun dato", "Prezzo_Trend": 0.00, "Prezzo_Low": 0.00, "Prezzo_Avg1": 0.00, "Prezzo_Avg30": 0.00, "Link_Cardmarket": ""}
+        return {"Stato": "Nessun dato"}
     except Exception:
-        # In caso di timeout o errore di rete, restituisce uno stato di errore senza rompere l'app
-        return {"Stato": "Errore API", "Prezzo_Trend": 0.00, "Prezzo_Low": 0.00, "Prezzo_Avg1": 0.00, "Prezzo_Avg30": 0.00, "Link_Cardmarket": ""}
-
+        return {"Stato": "Errore API"}
 
 # Dizionario statico delle immagini con i tuoi link esatti e verificati
 @st.cache_data
@@ -104,7 +113,7 @@ def load_all_images():
         "swsh4-025": "https://images.scrydex.com/pokemon/swsh4-25/medium",
         "swshp-SWSH075": "https://images.scrydex.com/pokemon/swshp-SWSH075/medium",
         "swsh45sv-SV107": "https://images.pokemontcg.io/swsh45sv/SV107.png",
-        "swshp-SWSH261": "https://images.scrydex.com/pokemon/swshp-SWSH133/medium",  # <-- Immagine corretta inserita qui
+        "swshp-SWSH261": "https://images.scrydex.com/pokemon/swshp-SWSH133/medium",
         "cel25-4": "https://images.scrydex.com/pokemon/cel25c-4_A/medium",
         "swsh9-154": "https://images.pokemontcg.io/swsh9/154.png",
         "swsh9-174": "https://images.pokemontcg.io/swsh9/174.png",
@@ -131,7 +140,6 @@ def load_all_images():
 
 all_images = load_all_images()
 
-# Database delle carte
 @st.cache_data
 def load_data():
     data = [
@@ -214,9 +222,10 @@ def load_data():
 
 df = load_data()
 
-# Inizializzazione dello stato della collezione (Binder)
+# --- INIZIALIZZAZIONE CON SUPPORTO FILE LOCALE ---
 if "binder" not in st.session_state:
-    st.session_state.binder = {}
+    # Prova a caricare lo stato iniziale da disco, se non c'è crea un dizionario vuoto
+    st.session_state.binder = load_binder_from_disk()
 
 # Barra laterale per i Filtri di Ricerca
 st.sidebar.header("🔍 Filtri di Ricerca")
@@ -226,7 +235,7 @@ selected_era = st.sidebar.selectbox("Filtra per Era:", ["Tutte"] + list(df["Era"
 # Filtro Binder
 mostra_solo_binder = st.sidebar.checkbox("📂 Mostra SOLO il mio Binder")
 
-# Conteggio carte nel Binder
+# Conteggio carte nel Binder (calcola solo i valori che sono effettivamente True)
 carte_possedute = sum(1 for v in st.session_state.binder.values() if v)
 st.sidebar.metric(label="📊 Carte nel tuo Binder", value=f"{carte_possedute} / {len(df)}")
 
@@ -255,12 +264,19 @@ else:
                 st.caption(f"📅 **Anno:** {row['Anno']} | 🏛️ **Era:** {row['Era']}")
                 st.write(f"📝 *{row['Info']}*")
                 
-                owned = st.checkbox("Ce l'ho in collezione", key=key_id, value=st.session_state.binder.get(key_id, False))
-                st.session_state.binder[key_id] = owned
+                # Legge il valore dal session_state (caricato inizialmente da JSON)
+                old_val = st.session_state.binder.get(key_id, False)
+                owned = st.checkbox("Ce l'ho in collezione", key=key_id, value=old_val)
+                
+                # Se l'utente clicca e cambia il valore della checkbox, aggiorna lo stato e salva su disco
+                if owned != old_val:
+                    st.session_state.binder[key_id] = owned
+                    save_binder_to_disk()
+                    st.rerun() # Forza il rinfresco per aggiornare immediatamente la sidebar del conteggio
                 
                 if owned:
                     st.success("✅ Aggiunto al tuo Binder!")
-            
+                    
             # --- SEZIONE PREZZI ---
             with col3:
                 st.markdown("📊 **Market Analytics (Cardmarket Real-time)**")
@@ -278,20 +294,22 @@ else:
                     st.text(f"🔸 Media odierna: € {dati_cm['Prezzo_Avg1']:.2f}")
                     st.text(f"🔸 Media ultimi 30 giorni: € {dati_cm['Prezzo_Avg30']:.2f}")
                     st.markdown(f"[🛒 Vedi su Cardmarket]({dati_cm['Link_Cardmarket']})")
-                
                 else:
                     if "Base" in row["Nome"] or "Shining" in row["Nome"] or "Crystal" in row["Nome"] or "Star" in row["Nome"]:
                         prezzo_stimato = 650.00
                     elif "ex" in row["Nome"].lower() and "2004" in row["Anno"]:
                         prezzo_stimato = 250.00
+                    elif "SIR" in row["Nome"] or "Alternate Art" in row["Nome"] or "Promo UPC" in row["Nome"]:
+                        prezzo_stimato = 180.00
                     elif "Topsun" in row["Nome"] or "Carddass" in row["Nome"]:
                         prezzo_stimato = 400.00
                     else:
                         prezzo_stimato = 45.00
                     
                     st.metric(label="Prezzo di Mercato (Stima)", value=f"€ {prezzo_stimato:.2f}")
-                    st.caption("⚠️ *Dati Cardmarket live non disponibili per questo ID specifico o server temporaneamente occupati.*")
+                    st.caption("⚠️ *Dati live Cardmarket non disponibili per questo ID o server API occupato. Mostrato prezzo stimato.*")
                     st.markdown("**Stime condizioni:**")
                     st.text(f"🔸 Mint (Perfetta): € {prezzo_stimato * 1.6:.2f}")
                     st.text(f"🔸 Near Mint (Ottima): € {prezzo_stimato:.2f}")
+                    st.text(f"🔸 Played (Rovinata): € {prezzo_stimato * 0.35:.2f}")
             st.divider()
